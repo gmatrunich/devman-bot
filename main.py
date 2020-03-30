@@ -18,6 +18,13 @@ MESSAGE_3 = 'Ошибок нет, можно приступать к следу�
 MESSAGE_4 = 'Ссылка на урок: https://dvmn.org{}'
 
 
+class DVMNBotLogsHandler(logging.Handler):
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        bot.send_message(chat_id=os.getenv('TELEGRAM_CHAT_ID'), text=log_entry)
+
+
 def make_dvmn_headers(token):
     dvmn_headers = {
             'Authorization': 'Token {}'.format(token)
@@ -75,11 +82,11 @@ def send_notification(lesson_title, lesson_url, lesson_is_negative):
 
 if __name__ == '__main__':
     load_dotenv()
-    logging.basicConfig(level=logging.DEBUG)
-    logging.debug('Сообщение уровня DEBUG')
+    logger = logging.getLogger("Логгер DVMN-BOT")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(DVMNBotLogsHandler())
     # proxy = telegram.utils.request.Request(proxy_url=PROXY_FOR_TELEGRAM)
     # bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'), request=proxy)
     bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'))
     logging.info('Бот запущен')
     waiting_for_results(os.getenv('DVMN_API_TOKEN'))
-    logging.info('Бот ждёт проверок')
