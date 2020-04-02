@@ -48,14 +48,6 @@ def waiting_for_results(bot, logger, token):
                 lesson_title = lesson_info['lesson_title']
                 lesson_url = lesson_info['lesson_url']
                 lesson_is_negative = lesson_info['is_negative']
-                """
-                send_notification(
-                    bot,
-                    lesson_title,
-                    lesson_url,
-                    lesson_is_negative
-                )
-                """
                 if lesson_is_negative:
                     bot.send_message(
                         chat_id=os.getenv('TELEGRAM_CHAT_ID'),
@@ -69,41 +61,18 @@ def waiting_for_results(bot, logger, token):
                         chat_id=os.getenv('TELEGRAM_CHAT_ID'),
                         text=(MESSAGE_1 + MESSAGE_3).format(lesson_title)
                     )                
+        except requests.exceptions.ReadTimeout as er:
+            logger.critical(er, exc_info=False)
+        except requests.exceptions.ConnectionError as er:
+            logger.error(er, exc_info=False)
+            time.sleep(3)
+        except ConnectionResetError as er:
+            logger.error(er, exc_info=False)
+            time.sleep(3)
+        except requests.exceptions.HTTPError as er:
+            logger.error(er, exc_info=False)
+            time.sleep(60)
 
-        #except requests.exceptions.ReadTimeout:
-        #    pass
-        #except requests.ConnectionError:
-        #    print('Нет подключения. Ждём...')
-        #    time.sleep(3)
-        #    continue
-
-        except requests.exceptions.ReadTimeout as err:
-            logger.critical(err, exc_info=True)
-        except requests.exceptions.ConnectionError as err:
-            logger.error(err, exc_info=True)
-            time.sleep(1)
-        except ConnectionResetError as err:
-            logger.error(err, exc_info=True)
-            time.sleep(1)
-        except requests.exceptions.HTTPError as err:
-            logger.error(err, exc_info=True)
-            time.sleep(360)
-"""
-def send_notification(bot, lesson_title, lesson_url, lesson_is_negative):
-    if lesson_is_negative:
-        bot.send_message(
-            chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-            text=(MESSAGE_1 + MESSAGE_2 + MESSAGE_4).format(
-                lesson_title,
-                lesson_url
-            )
-        )
-    if not lesson_is_negative:
-        bot.send_message(
-            chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-            text=(MESSAGE_1 + MESSAGE_3).format(lesson_title)
-        )
-"""
 
 def main():
     load_dotenv()
@@ -121,7 +90,7 @@ def main():
             )
 
     logger = logging.getLogger("DVMNBotLogsHandler")
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(logging.INFO)
     logger.addHandler(DVMNBotLogsHandler())
     logging.info('Бот запущен')
     waiting_for_results(bot, logger, os.getenv('DVMN_API_TOKEN'))
