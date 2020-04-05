@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 import logging
 
 
-#PROXY_FOR_TELEGRAM = 'socks5://96.44.133.110:58690'  # http://spys.one/proxies/
-
 REVIEWS_URL = 'https://dvmn.org/api/user_reviews/'
 LONG_POLLING_URL = 'https://dvmn.org/api/long_polling/'
 TIMEOUT = 90
@@ -73,8 +71,6 @@ def waiting_for_results(bot, logger, token):
 
 def main():
     load_dotenv()
-    #proxy = telegram.utils.request.Request(proxy_url=PROXY_FOR_TELEGRAM)
-    #bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'), request=proxy)
     bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'))
 
     class DVMNBotLogsHandler(logging.Handler):
