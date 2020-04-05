@@ -18,23 +18,19 @@ MESSAGE_3 = 'Ошибок нет, можно приступать к следу�
 MESSAGE_4 = 'Ссылка на урок: https://dvmn.org{}'
 
 
-def make_dvmn_headers(token):
-    dvmn_headers = {
-            'Authorization': 'Token {}'.format(token)
-        }
-    return dvmn_headers
-
-
 def waiting_for_results(bot, logger, token):
     requested_timestamp = time.time()
     while True:
         try:
+            dvmn_headers = {
+                        'Authorization': 'Token {}'.format(token)
+                    }            
             payload = {
                 'timestamp': requested_timestamp
             }
             response = requests.get(
                 LONG_POLLING_URL,
-                headers=make_dvmn_headers(token),
+                headers=dvmn_headers,
                 params=payload,
                 timeout=TIMEOUT
             )
@@ -61,16 +57,17 @@ def waiting_for_results(bot, logger, token):
                         chat_id=os.getenv('TELEGRAM_CHAT_ID'),
                         text=(MESSAGE_1 + MESSAGE_3).format(lesson_title)
                     )                
-        except requests.exceptions.ReadTimeout as er:
-            logger.critical(er, exc_info=False)
+        except requests.exceptions.ReadTimeout:
+            pass
         except requests.exceptions.ConnectionError as er:
-            logger.error(er, exc_info=False)
+            logger.error(er, exc_info=True)
             time.sleep(3)
+            continue
         except ConnectionResetError as er:
-            logger.error(er, exc_info=False)
+            logger.error(er, exc_info=True)
             time.sleep(3)
         except requests.exceptions.HTTPError as er:
-            logger.error(er, exc_info=False)
+            logger.error(er, exc_info=True)
             time.sleep(60)
 
 
@@ -90,9 +87,9 @@ def main():
             )
 
     logger = logging.getLogger("DVMNBotLogsHandler")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.addHandler(DVMNBotLogsHandler())
-    logging.info('Бот запущен')
+    logger.info('Бот запущен')
     waiting_for_results(bot, logger, os.getenv('DVMN_API_TOKEN'))
 
 
