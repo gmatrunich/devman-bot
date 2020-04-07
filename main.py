@@ -15,13 +15,13 @@ TIMEOUT = 90
 
 LESSON_WITH_ERRORS = '''Преподаватель проверил работу "{}".
 К сожалению, в работе нашлись ошибки.
-Ссылка на урок: https://dvmn.org{}
-'''
+Ссылка на урок: https://dvmn.org{}'''
 LESSON_WITHOUT_ERRORS = '''Преподаватель проверил работу "{}".
 Ошибок нет, можно приступать к следующему уроку.'''
 
 
 def waiting_for_results(bot, token):
+    logger.info('Бот запущен')
     requested_timestamp = time.time()
     while True:
         try:
@@ -48,54 +48,28 @@ def waiting_for_results(bot, token):
                 lesson_url = lesson_details['lesson_url']
                 lesson_is_negative = lesson_details['is_negative']
                 if lesson_is_negative:
-                    bot.send_message(
-                        chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-                        text=(
-                            LESSON_WITH_ERRORS
-                        ).format(
-                            lesson_title,
-                            lesson_url
-                        )
-                    )
-                if not lesson_is_negative:
-                    bot.send_message(
-                        chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-                        text=(
-                            LESSON_WITHOUT_ERRORS
-                        ).format(lesson_title)
-                    )
+                    msg_text = (
+                        LESSON_WITH_ERRORS
+                    ).format(lesson_title, lesson_url)
+                else:
+                    msg_text = (
+                        LESSON_WITHOUT_ERRORS
+                    ).format(lesson_title)
+                send_msg(msg_text)
         except requests.exceptions.ReadTimeout:
             pass
-        except requests.exceptions.ConnectionError as er:
+        except (
+            requests.exceptions.ConnectionError,
+            ConnectionResetError,
+            requests.exceptions.HTTPError
+        ) as er:
             logger.error(er, exc_info=True)
             time.sleep(3)
             continue
-        except ConnectionResetError as er:
-            logger.error(er, exc_info=True)
-            time.sleep(3)
-        except requests.exceptions.HTTPError as er:
-            logger.error(er, exc_info=True)
-            time.sleep(60)
 
 
-def send_messages(bot, token):
-    lesson_title = "Запускаем бота на сервере"
-    lesson_url = "https://dvmn.org/modules/chat-bots/lesson/bot-deploy/"
-    bot.send_message(
-        chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-        text=(
-            LESSON_WITH_ERRORS
-        ).format(
-            lesson_title,
-            lesson_url
-        )
-    )
-    bot.send_message(
-        chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-        text=(
-            LESSON_WITHOUT_ERRORS
-        ).format(lesson_title)
-    )
+def send_msg(msg_text):
+    bot.send_message(chat_id=os.getenv('TELEGRAM_CHAT_ID'), text=(msg_text))
 
 
 def main():
@@ -113,9 +87,7 @@ def main():
 
     logger.setLevel(logging.DEBUG)
     logger.addHandler(DVMNBotLogsHandler())
-    logger.info('Бот запущен')
-    #waiting_for_results(bot, os.getenv('DVMN_API_TOKEN'))
-    send_messages(bot, os.getenv('DVMN_API_TOKEN'))
+    waiting_for_results(bot, os.getenv('DVMN_API_TOKEN'))
 
 
 if __name__ == '__main__':
