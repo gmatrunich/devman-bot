@@ -78,7 +78,7 @@ def waiting_for_results(bot, token):
             time.sleep(60)
 
 
-def send_messages():
+def send_messages(bot, token):
     lesson_title = "Запускаем бота на сервере"
     lesson_url = "https://dvmn.org/modules/chat-bots/lesson/bot-deploy/"
     bot.send_message(
