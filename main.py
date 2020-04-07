@@ -6,23 +6,28 @@ from dotenv import load_dotenv
 import logging
 
 
+logger = logging.getLogger("DVMNBotLogsHandler")
+
+
 REVIEWS_URL = 'https://dvmn.org/api/user_reviews/'
 LONG_POLLING_URL = 'https://dvmn.org/api/long_polling/'
 TIMEOUT = 90
 
-MESSAGE_1 = 'Преподаватель проверил работу "{}".\n'
-MESSAGE_2 = 'К сожалению, в работе нашлись ошибки.\n\n'
-MESSAGE_3 = 'Ошибок нет, можно приступать к следующему уроку.'
-MESSAGE_4 = 'Ссылка на урок: https://dvmn.org{}'
+LESSON_WITH_ERRORS = '''Преподаватель проверил работу "{}".
+К сожалению, в работе нашлись ошибки.
+Ссылка на урок: https://dvmn.org{}
+'''
+LESSON_WITHOUT_ERRORS = '''Преподаватель проверил работу "{}".
+Ошибок нет, можно приступать к следующему уроку.'''
 
 
-def waiting_for_results(bot, logger, token):
+def waiting_for_results(bot, token):
     requested_timestamp = time.time()
     while True:
         try:
             dvmn_headers = {
                         'Authorization': 'Token {}'.format(token)
-                    }            
+                    }
             payload = {
                 'timestamp': requested_timestamp
             }
@@ -38,14 +43,16 @@ def waiting_for_results(bot, logger, token):
                 requested_timestamp = devman_answer['timestamp_to_request']
             else:
                 requested_timestamp = devman_answer['last_attempt_timestamp']
-                lesson_info = devman_answer['new_attempts'][0]
-                lesson_title = lesson_info['lesson_title']
-                lesson_url = lesson_info['lesson_url']
-                lesson_is_negative = lesson_info['is_negative']
+                lesson_details = devman_answer['new_attempts'][0]
+                lesson_title = lesson_details['lesson_title']
+                lesson_url = lesson_details['lesson_url']
+                lesson_is_negative = lesson_details['is_negative']
                 if lesson_is_negative:
                     bot.send_message(
                         chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-                        text=(MESSAGE_1 + MESSAGE_2 + MESSAGE_4).format(
+                        text=(
+                            LESSON_WITH_ERRORS
+                        ).format(
                             lesson_title,
                             lesson_url
                         )
@@ -53,8 +60,10 @@ def waiting_for_results(bot, logger, token):
                 if not lesson_is_negative:
                     bot.send_message(
                         chat_id=os.getenv('TELEGRAM_CHAT_ID'),
-                        text=(MESSAGE_1 + MESSAGE_3).format(lesson_title)
-                    )                
+                        text=(
+                            LESSON_WITHOUT_ERRORS
+                        ).format(lesson_title)
+                    )
         except requests.exceptions.ReadTimeout:
             pass
         except requests.exceptions.ConnectionError as er:
@@ -67,6 +76,26 @@ def waiting_for_results(bot, logger, token):
         except requests.exceptions.HTTPError as er:
             logger.error(er, exc_info=True)
             time.sleep(60)
+
+
+def send_messages():
+    lesson_title = "Запускаем бота на сервере"
+    lesson_url = "https://dvmn.org/modules/chat-bots/lesson/bot-deploy/"
+    bot.send_message(
+        chat_id=os.getenv('TELEGRAM_CHAT_ID'),
+        text=(
+            LESSON_WITH_ERRORS
+        ).format(
+            lesson_title,
+            lesson_url
+        )
+    )
+    bot.send_message(
+        chat_id=os.getenv('TELEGRAM_CHAT_ID'),
+        text=(
+            LESSON_WITHOUT_ERRORS
+        ).format(lesson_title)
+    )
 
 
 def main():
@@ -82,11 +111,11 @@ def main():
                 text=log_entry
             )
 
-    logger = logging.getLogger("DVMNBotLogsHandler")
     logger.setLevel(logging.DEBUG)
     logger.addHandler(DVMNBotLogsHandler())
     logger.info('Бот запущен')
-    waiting_for_results(bot, logger, os.getenv('DVMN_API_TOKEN'))
+    #waiting_for_results(bot, os.getenv('DVMN_API_TOKEN'))
+    send_messages(bot, os.getenv('DVMN_API_TOKEN'))
 
 
 if __name__ == '__main__':
