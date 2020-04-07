@@ -55,7 +55,7 @@ def waiting_for_results(bot, token):
                     msg_text = (
                         LESSON_WITHOUT_ERRORS
                     ).format(lesson_title)
-                send_msg(msg_text)
+                send_msg(bot, msg_text)
         except requests.exceptions.ReadTimeout:
             pass
         except (
@@ -68,7 +68,7 @@ def waiting_for_results(bot, token):
             continue
 
 
-def send_msg(msg_text):
+def send_msg(bot, msg_text):
     bot.send_message(chat_id=os.getenv('TELEGRAM_CHAT_ID'), text=(msg_text))
 
 
